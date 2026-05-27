@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Meals">
+<meta name="theme-color" content="#f5f4ef">
+<title>Meal Tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231a1a1a'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle' fill='white' font-family='system-ui'%3E🍽%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231a1a1a'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle' fill='white' font-family='system-ui'%3E🍽%3C/text%3E%3C/svg%3E">
+<style>
+  html, body { background: #faf9f4; min-height: 100vh; min-height: -webkit-fill-available; }
+  body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+</style>
+</head>
+<body>
+<style>
+  body { font-family: var(--font-sans, -apple-system, system-ui, sans-serif); margin: 0; padding: 0; background: transparent; color: var(--color-text-primary, #1a1a1a); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 1rem; }
+  .hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.25rem; }
+  .hdr h1 { font-size: 22px; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+  .hdr .date { font-size: 13px; color: var(--color-text-secondary, #666); }
+  .tagline { font-size: 13px; color: var(--color-text-secondary, #666); margin: 0 0 1.25rem; }
+
+  .countdown { background: var(--color-background-secondary, #f5f4ef); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .countdown .label { font-size: 13px; color: var(--color-text-secondary, #666); margin: 0 0 4px; }
+  .countdown .time { font-size: 22px; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+  .countdown .due { color: #993C1D; }
+  .chime-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary, #666); cursor: pointer; user-select: none; }
+  .chime-toggle input { margin: 0; }
+
+  .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1.5rem; }
+  .stat { background: var(--color-background-secondary, #f5f4ef); border-radius: 8px; padding: 0.75rem 1rem; }
+  .stat .k { font-size: 12px; color: var(--color-text-secondary, #666); margin: 0; }
+  .stat .v { font-size: 20px; font-weight: 500; margin: 2px 0 0; letter-spacing: -0.01em; }
+  .stat .v.good { color: #0F6E56; }
+  .stat .v.over { color: #993C1D; }
+
+  .meal { background: var(--color-background-primary, #fff); border: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.12)); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; transition: opacity 0.2s; }
+  .meal.done { opacity: 0.55; }
+  .meal-hdr { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .meal-time { display: flex; align-items: center; gap: 10px; }
+  .meal-time .num { width: 28px; height: 28px; border-radius: 50%; background: var(--color-background-secondary, #f5f4ef); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; }
+  .meal.active .num { background: #FAEEDA; color: #633806; }
+  .meal.due .num { background: #F7C1C1; color: #791F1F; }
+  .meal-time .when { font-size: 15px; font-weight: 500; }
+  .meal-time .label { font-size: 12px; color: var(--color-text-secondary, #666); margin-left: 4px; }
+  .meal-name { font-size: 14px; margin: 6px 0 4px; }
+  .meal-name .nm { font-weight: 500; }
+  .meal-name .cal { color: var(--color-text-secondary, #666); margin-left: 6px; font-size: 13px; }
+  .meal-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .btn { background: transparent; border: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.18)); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; color: inherit; transition: background 0.15s; }
+  .btn:hover { background: var(--color-background-secondary, #f5f4ef); }
+  .btn.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .btn.primary:hover { background: #333; }
+  .btn.ate { background: #0F6E56; color: #fff; border-color: #0F6E56; }
+  .btn.skipped { background: #F0997B; color: #4A1B0C; border-color: #D85A30; }
+
+  details { margin-top: 8px; }
+  details summary { cursor: pointer; font-size: 13px; color: var(--color-text-secondary, #666); padding: 4px 0; user-select: none; list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: "▸ "; display: inline-block; transition: transform 0.15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  .swap-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; padding-left: 12px; }
+  .swap-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .swap-item:hover { background: var(--color-background-secondary, #f5f4ef); }
+  .swap-item .sw-cal { color: var(--color-text-secondary, #666); font-size: 12px; }
+
+  .evening { border: 0.5px dashed #D85A30; background: #FAECE7; }
+  .evening .meal-time .when { color: #4A1B0C; }
+  .evening-note { font-size: 12px; color: #712B13; margin: 4px 0 0; font-style: italic; }
+
+  .footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.12)); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .footer .info { font-size: 12px; color: var(--color-text-secondary, #666); }
+  .reset-btn { background: transparent; border: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.18)); color: var(--color-text-secondary, #666); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .reset-btn:hover { color: #791F1F; border-color: #E24B4A; }
+
+  .alarm-times { background: var(--color-background-secondary, #f5f4ef); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 13px; }
+  .alarm-times .at-hdr { font-weight: 500; margin: 0 0 4px; }
+  .alarm-times .at-row { color: var(--color-text-secondary, #666); }
+
+  .pulse { animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+</style>
+
+<div class="wrap">
+  <div class="hdr">
+    <h1>Insanity meal tracker</h1>
+    <div class="date" id="today-date"></div>
+  </div>
+  <p class="tagline">2,700 cal · 5 meals + evening block · structured for ADHD</p>
+
+  <div class="countdown" id="countdown">
+    <div>
+      <p class="label">Next meal</p>
+      <p class="time" id="next-time">—</p>
+    </div>
+    <label class="chime-toggle">
+      <input type="checkbox" id="chime-on" checked />
+      Chime when due
+    </label>
+  </div>
+
+  <div class="totals">
+    <div class="stat">
+      <p class="k">Eaten</p>
+      <p class="v" id="cal-eaten">0</p>
+    </div>
+    <div class="stat">
+      <p class="k">Remaining</p>
+      <p class="v" id="cal-left">2700</p>
+    </div>
+    <div class="stat">
+      <p class="k">Meals done</p>
+      <p class="v" id="meals-done">0 / 6</p>
+    </div>
+  </div>
+
+  <div class="alarm-times">
+    <p class="at-hdr">📱 Set these alarms on your phone (one time):</p>
+    <div class="at-row">6:00a · 9:00a · 12:00p · 3:00p · 6:00p · 8:30p (evening block)</div>
+  </div>
+
+  <div id="meals-container"></div>
+
+  <div class="footer">
+    <div class="info">Data saved automatically. Resets at 4am daily.</div>
+    <button class="reset-btn" id="reset-btn">Reset today</button>
+  </div>
+</div>
+
+<script>
+// ============ MEAL DATA ============
+// Each meal has options. Each option = ~500 cal version from the Insanity guide.
+const MEAL_DATA = [
+  {
+    slot: 1, time: "6:00 AM", hour: 6, label: "Breakfast",
+    options: [
+      { name: "Proatmeal", cal: 500, desc: "¾ cup oats, ¾ cup berries, 1 scoop whey, 1½ Tbsp walnuts, ½ cup milk" },
+      { name: "Berry protein smoothie", cal: 500, desc: "1 cup milk, 1½ scoops whey, 1 cup strawberries, 1 banana, 1 Tbsp PB" },
+      { name: "Egg white wrap", cal: 500, desc: "4 egg whites, tortilla, 6 Tbsp mozz, tomato, melon, ¾ cup yogurt" },
+      { name: "Veggie omelet", cal: 500, desc: "2 eggs + 2 whites, mushrooms, onion, toast w/ 2 Tbsp preserves, 1 oz cheese, orange" },
+      { name: "Egg sandwich", cal: 500, desc: "Turkey bacon, 1 egg + 4 whites, English muffin, 1 oz cheese, orange" },
+      { name: "Shakeology", cal: 280, desc: "2 scoops Shakeology, 2 cups water, ice (lower cal — add 200-cal block)" },
+      { name: "Bowl of cereal", cal: 500, desc: "1½ cups high-protein cereal, milk, 3 Tbsp flax, 1 banana" },
+      { name: "PB toast", cal: 500, desc: "2 slices toast, PB, preserves, ¾ cup cottage cheese w/ 1 cup fruit" }
+    ]
+  },
+  {
+    slot: 2, time: "9:00 AM", hour: 9, label: "Mid-morning",
+    options: [
+      { name: "Protein pancakes", cal: 500, desc: "3 small protein pancakes w/ 1 cup berries + 2 Tbsp flax" },
+      { name: "Vanilla-berry shake", cal: 500, desc: "1 cup milk, 2 scoops whey, berries, banana, 1 Tbsp PB" },
+      { name: "Yogurt bowl", cal: 500, desc: "1½ cups yogurt, apple, walnuts, honey, 1 scoop whey" },
+      { name: "Protein omelet", cal: 500, desc: "1 egg + 3 whites, mushrooms, turkey, 2 slices toast, 1 oz feta, melon" },
+      { name: "Warm cereal bowl", cal: 500, desc: "1½ cups water, 4 Tbsp Cream of Wheat, raisins, 2 Tbsp almonds, whey, 1 cup milk" },
+      { name: "Mexican eggs", cal: 500, desc: "Egg + white tortilla, cheese, salsa, berries, milk + whey" },
+      { name: "Nutrition bar combo", cal: 500, desc: "P90X bar, ½ cup cottage cheese w/ walnuts, banana or orange" },
+      { name: "Deli sandwich", cal: 500, desc: "Whole bagel, 4 oz turkey, 2 oz cheese, tomato, tomato juice" }
+    ]
+  },
+  {
+    slot: 3, time: "12:00 PM", hour: 12, label: "Lunch",
+    options: [
+      { name: "Grilled chicken salad", cal: 500, desc: "3 oz chicken, greens, apple, pecans, cucumber + English muffin + 2 tsp olive oil" },
+      { name: "Sushi roll plate", cal: 500, desc: "7 pc tuna/salmon roll, greens, edamame, miso soup" },
+      { name: "Black bean soup + sandwich", cal: 500, desc: "Cup soup, toast w/ 6 oz turkey, ⅓ avocado, mustard, mayo" },
+      { name: "Teriyaki grilled tuna", cal: 500, desc: "4 oz tuna, spinach, 2 tsp olive oil, 1¼ cup brown rice" },
+      { name: "Roast beef sandwich", cal: 500, desc: "Whole pita, 4 oz roast beef, veggie salad w/ 1 tsp olive oil + 3 Tbsp almonds" },
+      { name: "Chicken ranch wrap", cal: 500, desc: "Tortilla, 2 oz chicken, ⅓ avocado, veggies + apple" },
+      { name: "Lean burger", cal: 500, desc: "5 oz beef patty on English muffin w/ ¾ oz cheese + berries" },
+      { name: "Whole wheat pasta", cal: 500, desc: "1 cup pasta, veggies, feta, 2 oz chicken + pear" },
+      { name: "Salmon Niçoise", cal: 500, desc: "3 oz salmon, greens, beans, potato, olives, roll, 2 tsp olive oil" }
+    ]
+  },
+  {
+    slot: 4, time: "3:00 PM", hour: 15, label: "Afternoon",
+    options: [
+      { name: "Sashimi plate", cal: 500, desc: "4 oz sashimi, greens, edamame, ⅔ cup brown rice, vinaigrette" },
+      { name: "Nut butter & jelly", cal: 500, desc: "2 slices bread, PB, preserves, 1¼ cups cottage cheese" },
+      { name: "Cold cut platter", cal: 500, desc: "Crackers, 3 oz turkey, 3 oz ham, Swiss, grapes" },
+      { name: "Tuna salad in tomato", cal: 500, desc: "Tuna, celery, onion, mayo, mustard, apple, Melba toast" },
+      { name: "Turkey lettuce wrap", cal: 500, desc: "5 oz turkey, tomato, beans, fruit salad" },
+      { name: "Protein pizza muffin", cal: 500, desc: "English muffin, sauce, ⅓ cup mozz, 3 oz chicken, broccoli, orange" },
+      { name: "Turkey chili", cal: 500, desc: "1½ cups chili, salad w/ egg whites, vinegar, oil, roll" },
+      { name: "Shrimp cocktail", cal: 500, desc: "6 oz shrimp, ¼ cup cocktail sauce, roll, veggies w/ hummus" },
+      { name: "Roast beef wrap", cal: 500, desc: "Tortilla, 4 oz beef, avocado, tomato, berries w/ yogurt + walnuts" }
+    ]
+  },
+  {
+    slot: 5, time: "6:00 PM", hour: 18, label: "Dinner",
+    options: [
+      { name: "Dinner omelet", cal: 500, desc: "1 egg + 2 whites, spinach, feta, toast, pear, vanilla yogurt" },
+      { name: "Baked cod", cal: 500, desc: "8 oz cod, breadcrumbs, 2 tsp olive oil, veggies, roll" },
+      { name: "Steak w/ broccoli", cal: 500, desc: "5 oz flank, ¾ potato, mustard, ¾ cup broccoli, 1 cup milk" },
+      { name: "Chicken meatballs", cal: 500, desc: "5 oz chicken, ¾ cup pasta, marinara, green beans" },
+      { name: "Grilled salmon", cal: 500, desc: "5 oz salmon, 1½ oz pasta, 20 asparagus, grapes" },
+      { name: "Citrus baked chicken", cal: 500, desc: "6 oz chicken, lemon, paprika, carrots w/ honey, ¾ cup brown rice" },
+      { name: "Turkey burger", cal: 500, desc: "3 oz turkey patty, salsa, onion, bun, cheese, fruit salad" },
+      { name: "Brown rice bowl", cal: 500, desc: "¾ cup rice, 4 oz chicken, ⅔ cup corn, ⅔ cup peas" },
+      { name: "Chicken stir-fry", cal: 500, desc: "5 oz chicken, broccoli, mushrooms, snow peas, rice, yogurt w/ berries" },
+      { name: "Seafood marinara", cal: 500, desc: "1½ oz pasta, 5 oz shrimp, marinara, parmesan, spinach, milk" }
+    ]
+  },
+  {
+    slot: 6, time: "8:30 PM", hour: 20.5, label: "Evening block", isEvening: true,
+    options: [
+      { name: "Oatmeal w/ nuts", cal: 200, desc: "½ cup dry oatmeal w/ water + 1 Tbsp slivered almonds or walnuts" },
+      { name: "Banana + PB", cal: 200, desc: "1 banana + 1 Tbsp peanut butter" },
+      { name: "Yogurt w/ cereal", cal: 200, desc: "1 cup nonfat vanilla yogurt + 2 Tbsp Grape Nuts" },
+      { name: "Cottage cheese & berries", cal: 200, desc: "1 cup cottage cheese + ½ cup berries (filling, slow-digesting)" },
+      { name: "Orange + almonds", cal: 200, desc: "1 large navel orange + 12 raw almonds" },
+      { name: "Egg salad on muffin", cal: 200, desc: "1 hard-boiled egg, 1 egg white, 1 Tbsp light mayo on ½ English muffin" },
+      { name: "Tuna rice cake", cal: 200, desc: "3 oz tuna + 1 Tbsp light mayo on whole-grain rice cake" },
+      { name: "Cereal & milk", cal: 200, desc: "1 cup whole-grain cereal + ¾ cup skim or low-fat milk" }
+    ]
+  }
+];
+
+const TOTAL_GOAL = 2700;
+const STORAGE_KEY_PREFIX = "imt:";
+
+// ============ STATE ============
+let state = {
+  date: getTodayKey(),
+  meals: {} // slot -> { selectedIdx, status: 'pending'|'ate'|'skipped', eatenCal }
+};
+
+function getTodayKey() {
+  const now = new Date();
+  // Day "resets" at 4am — anything before 4am counts as previous day
+  if (now.getHours() < 4) now.setDate(now.getDate() - 1);
+  return now.toISOString().split('T')[0];
+}
+
+// ============ STORAGE (localStorage for standalone web app) ============
+function loadState() {
+  const key = STORAGE_KEY_PREFIX + state.date;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.date === state.date) state.meals = parsed.meals || {};
+    }
+  } catch (e) {
+    // No data for today yet — that's fine
+  }
+  // Initialize any missing meal slots with default selection (first option)
+  MEAL_DATA.forEach(m => {
+    if (!state.meals[m.slot]) {
+      state.meals[m.slot] = { selectedIdx: 0, status: 'pending' };
+    }
+  });
+}
+
+function saveState() {
+  const key = STORAGE_KEY_PREFIX + state.date;
+  try {
+    localStorage.setItem(key, JSON.stringify({ date: state.date, meals: state.meals }));
+  } catch (e) {
+    console.error('Save failed:', e);
+  }
+}
+
+// ============ RENDER ============
+function render() {
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+  // Determine which meal is "next" or "due"
+  const now = new Date();
+  const nowHour = now.getHours() + now.getMinutes() / 60;
+  let nextMealIdx = -1;
+  for (let i = 0; i < MEAL_DATA.length; i++) {
+    const m = MEAL_DATA[i];
+    const st = state.meals[m.slot];
+    if (st.status === 'pending' && m.hour <= nowHour + 0.5) {
+      // It's due (within 30 min window)
+      if (nextMealIdx === -1 || m.hour < MEAL_DATA[nextMealIdx].hour) nextMealIdx = i;
+    }
+  }
+  if (nextMealIdx === -1) {
+    // Find next upcoming meal
+    for (let i = 0; i < MEAL_DATA.length; i++) {
+      const m = MEAL_DATA[i];
+      const st = state.meals[m.slot];
+      if (st.status === 'pending' && m.hour > nowHour) {
+        if (nextMealIdx === -1 || m.hour < MEAL_DATA[nextMealIdx].hour) nextMealIdx = i;
+      }
+    }
+  }
+
+  // Update countdown
+  const ntEl = document.getElementById('next-time');
+  if (nextMealIdx === -1) {
+    ntEl.textContent = "All meals logged ✓";
+    ntEl.classList.remove('due');
+  } else {
+    const m = MEAL_DATA[nextMealIdx];
+    const diff = m.hour - nowHour;
+    if (diff <= 0) {
+      // Overdue or due now
+      const overMin = Math.round(-diff * 60);
+      ntEl.textContent = overMin === 0 ? `${m.label} — NOW` : `${m.label} — ${overMin} min overdue`;
+      ntEl.classList.add('due');
+      ntEl.classList.add('pulse');
+    } else if (diff < 1) {
+      const min = Math.round(diff * 60);
+      ntEl.textContent = `${m.label} in ${min} min`;
+      ntEl.classList.remove('due');
+      ntEl.classList.remove('pulse');
+    } else {
+      const h = Math.floor(diff);
+      const min = Math.round((diff - h) * 60);
+      ntEl.textContent = `${m.label} in ${h}h ${min}m`;
+      ntEl.classList.remove('due');
+      ntEl.classList.remove('pulse');
+    }
+  }
+
+  // Update totals
+  let eaten = 0;
+  let mealsDone = 0;
+  MEAL_DATA.forEach(m => {
+    const st = state.meals[m.slot];
+    if (st.status === 'ate') {
+      eaten += st.eatenCal || m.options[st.selectedIdx].cal;
+      mealsDone++;
+    } else if (st.status === 'skipped') {
+      mealsDone++;
+    }
+  });
+  document.getElementById('cal-eaten').textContent = eaten.toLocaleString();
+  const remaining = TOTAL_GOAL - eaten;
+  const remEl = document.getElementById('cal-left');
+  remEl.textContent = remaining.toLocaleString();
+  remEl.classList.remove('good', 'over');
+  if (remaining < 0) remEl.classList.add('over');
+  else if (remaining <= 300) remEl.classList.add('good');
+  document.getElementById('meals-done').textContent = `${mealsDone} / 6`;
+
+  // Render meal cards
+  const container = document.getElementById('meals-container');
+  container.innerHTML = '';
+  MEAL_DATA.forEach((m, idx) => {
+    const st = state.meals[m.slot];
+    const selected = m.options[st.selectedIdx];
+    const isDue = idx === nextMealIdx && (m.hour - nowHour <= 0);
+    const isActive = idx === nextMealIdx && (m.hour - nowHour > 0) && (m.hour - nowHour < 1);
+
+    const card = document.createElement('div');
+    card.className = 'meal' + (st.status !== 'pending' ? ' done' : '') + (m.isEvening ? ' evening' : '') + (isActive ? ' active' : '') + (isDue ? ' due' : '');
+
+    let actionBtns = '';
+    if (st.status === 'pending') {
+      actionBtns = `
+        <button class="btn primary" data-action="ate" data-slot="${m.slot}">✓ Ate it</button>
+        <button class="btn" data-action="skipped" data-slot="${m.slot}">Skip</button>
+      `;
+    } else {
+      actionBtns = `
+        <button class="btn ${st.status}" data-action="reset" data-slot="${m.slot}">${st.status === 'ate' ? '✓ Eaten' : 'Skipped'} — undo</button>
+      `;
+    }
+
+    const swapsHtml = m.options.map((opt, i) => `
+      <div class="swap-item" data-slot="${m.slot}" data-idx="${i}">
+        <span>${i === st.selectedIdx ? '● ' : '○ '}${opt.name}</span>
+        <span class="sw-cal">${opt.cal} cal</span>
+      </div>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="meal-hdr">
+        <div class="meal-time">
+          <div class="num">${m.slot}</div>
+          <div>
+            <span class="when">${m.time}</span>
+            <span class="label">${m.label}</span>
+          </div>
+        </div>
+      </div>
+      <div class="meal-name">
+        <span class="nm">${selected.name}</span>
+        <span class="cal">${selected.cal} cal</span>
+      </div>
+      <div style="font-size: 13px; color: var(--color-text-secondary, #666); line-height: 1.5;">${selected.desc}</div>
+      ${m.isEvening ? '<p class="evening-note">Your binge-insurance snack. Eat this on schedule — don\'t skip it.</p>' : ''}
+      <div class="meal-actions">${actionBtns}</div>
+      <details>
+        <summary>Swap (${m.options.length} options)</summary>
+        <div class="swap-list">${swapsHtml}</div>
+      </details>
+    `;
+    container.appendChild(card);
+  });
+
+  // Wire up buttons
+  container.querySelectorAll('.btn[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const slot = parseInt(btn.dataset.slot);
+      const action = btn.dataset.action;
+      const st = state.meals[slot];
+      const meal = MEAL_DATA.find(m => m.slot === slot);
+      if (action === 'ate') {
+        st.status = 'ate';
+        st.eatenCal = meal.options[st.selectedIdx].cal;
+      } else if (action === 'skipped') {
+        st.status = 'skipped';
+      } else if (action === 'reset') {
+        st.status = 'pending';
+        delete st.eatenCal;
+      }
+      saveState();
+      render();
+    });
+  });
+
+  container.querySelectorAll('.swap-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const slot = parseInt(item.dataset.slot);
+      const idx = parseInt(item.dataset.idx);
+      state.meals[slot].selectedIdx = idx;
+      if (state.meals[slot].status === 'ate') {
+        state.meals[slot].eatenCal = MEAL_DATA.find(m => m.slot === slot).options[idx].cal;
+      }
+      saveState();
+      render();
+    });
+  });
+}
+
+// ============ CHIME ============
+let lastChimedSlot = null;
+let audioCtx = null;
+
+function playChime() {
+  if (!document.getElementById('chime-on').checked) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    // Two-tone gentle chime
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, now + i * 0.15);
+      gain.gain.linearRampToValueAtTime(0.2, now + i * 0.15 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.6);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + i * 0.15);
+      osc.stop(now + i * 0.15 + 0.6);
+    });
+  } catch (e) { /* audio not available */ }
+}
+
+function checkChime() {
+  const now = new Date();
+  const nowHour = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+  MEAL_DATA.forEach(m => {
+    const st = state.meals[m.slot];
+    if (st.status !== 'pending') return;
+    // Fire chime when we cross meal time (within 30 sec window)
+    const diff = Math.abs(m.hour - nowHour);
+    if (diff < 0.0083 && lastChimedSlot !== m.slot) { // ~30 sec
+      lastChimedSlot = m.slot;
+      playChime();
+    }
+  });
+}
+
+// ============ INIT ============
+function init() {
+  loadState();
+  render();
+  // Re-render every 30 sec to update countdown
+  setInterval(() => {
+    // Check for day rollover
+    const currentDay = getTodayKey();
+    if (currentDay !== state.date) {
+      state.date = currentDay;
+      state.meals = {};
+      MEAL_DATA.forEach(m => { state.meals[m.slot] = { selectedIdx: 0, status: 'pending' }; });
+      lastChimedSlot = null;
+    }
+    checkChime();
+    render();
+  }, 30000);
+
+  // Unlock audio on first user interaction (browser requirement)
+  const unlockAudio = () => {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    document.removeEventListener('click', unlockAudio);
+  };
+  document.addEventListener('click', unlockAudio);
+
+  // Reset button
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    if (confirm('Reset all meals for today? This cannot be undone.')) {
+      MEAL_DATA.forEach(m => { state.meals[m.slot] = { selectedIdx: 0, status: 'pending' }; });
+      saveState();
+      render();
+    }
+  });
+}
+
+init();
+</script>
+</body></html>
